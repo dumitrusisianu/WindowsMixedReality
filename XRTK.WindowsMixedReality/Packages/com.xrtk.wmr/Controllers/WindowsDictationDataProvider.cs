@@ -133,12 +133,6 @@ namespace XRTK.WindowsMixedReality.Controllers
 
         private static DictationRecognizer dictationRecognizer;
 
-        private readonly WaitUntil waitUntilPhraseRecognitionSystemHasStarted = new WaitUntil(() => PhraseRecognitionSystem.Status != SpeechSystemStatus.Stopped);
-        private readonly WaitUntil waitUntilPhraseRecognitionSystemHasStopped = new WaitUntil(() => PhraseRecognitionSystem.Status != SpeechSystemStatus.Running);
-
-        private readonly WaitUntil waitUntilDictationRecognizerHasStarted = new WaitUntil(() => dictationRecognizer.Status != SpeechSystemStatus.Stopped);
-        private readonly WaitUntil waitUntilDictationRecognizerHasStopped = new WaitUntil(() => dictationRecognizer.Status != SpeechSystemStatus.Running);
-
         /// <inheritdoc />
         public override bool IsListening { get; protected set; } = false;
 
@@ -172,7 +166,7 @@ namespace XRTK.WindowsMixedReality.Controllers
                 PhraseRecognitionSystem.Shutdown();
             }
 
-            await waitUntilPhraseRecognitionSystemHasStopped;
+            await PhraseRecognitionSystem.Status.WaitUntil(status => status != SpeechSystemStatus.Running);
             Debug.Assert(PhraseRecognitionSystem.Status == SpeechSystemStatus.Stopped);
 
             // Query the maximum frequency of the default microphone.
@@ -183,7 +177,7 @@ namespace XRTK.WindowsMixedReality.Controllers
             dictationRecognizer.AutoSilenceTimeoutSeconds = autoSilenceTimeout;
             dictationRecognizer.Start();
 
-            await waitUntilDictationRecognizerHasStarted;
+            await dictationRecognizer.Status.WaitUntil(status => status != SpeechSystemStatus.Stopped);
             Debug.Assert(dictationRecognizer.Status == SpeechSystemStatus.Running);
 
             if (dictationRecognizer.Status == SpeechSystemStatus.Failed)
@@ -229,12 +223,12 @@ namespace XRTK.WindowsMixedReality.Controllers
                 dictationRecognizer.Stop();
             }
 
-            await waitUntilDictationRecognizerHasStopped;
+            await dictationRecognizer.Status.WaitUntil(status => status != SpeechSystemStatus.Running);
             Debug.Assert(dictationRecognizer.Status == SpeechSystemStatus.Stopped);
 
             PhraseRecognitionSystem.Restart();
 
-            await waitUntilPhraseRecognitionSystemHasStarted;
+            await PhraseRecognitionSystem.Status.WaitUntil(status => status != SpeechSystemStatus.Stopped);
             Debug.Assert(PhraseRecognitionSystem.Status == SpeechSystemStatus.Running);
 
             isTransitioning = false;
